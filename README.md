@@ -95,6 +95,22 @@ Each tab's view controller is kept while another is shown, and leaves room
 for the bar through its safe area. Choosing the tab already shown takes a
 navigation controller back to its first screen.
 
+### Progress ring button
+
+`ProgressRingButton` is a round button ringed by progress, with an image
+cropped to a circle inside the ring, and a placeholder while there is no
+image. It suits the tab bar's raised control, for example to show what is
+playing and how far it has got:
+
+```swift
+let button = ProgressRingButton()
+button.placeholderImage = UIImage(systemName: "music.note")
+button.image = cover
+button.progress = 0.4
+```
+
+It is `open`, so an app can subclass it to bind its own state.
+
 ### Styling
 
 Every control here takes a `Style` with its colours, fonts and measurements,
