@@ -71,6 +71,46 @@ let cell = collectionView.dequeue(AlbumCell.self, for: indexPath)
 
 Both `UITableView` and `UICollectionView` are supported.
 
+### Notched tab bar
+
+`NotchedTabBarController` shows one view controller per tab above a
+`NotchedTabBar`: a bar with a round control raised out of a notch in the
+middle of its top edge. The items split around the control, half on each
+side. It is a container of its own rather than a styled `UITabBarController`,
+so the bar looks the same on every iOS version.
+
+```swift
+let tabs = NotchedTabBarController(
+    tabs: [
+        .init(item: .init(title: "Library", image: UIImage(systemName: "square.stack")), viewController: library),
+        .init(item: .init(title: "Explore", image: UIImage(systemName: "magnifyingglass")), viewController: explore),
+        .init(item: .init(title: "Sources", image: UIImage(systemName: "folder")), viewController: sources),
+        .init(item: .init(title: "Settings", image: UIImage(systemName: "gearshape")), viewController: settings),
+    ],
+    control: playButton
+)
+```
+
+Each tab's view controller is kept while another is shown, and leaves room
+for the bar through its safe area. Choosing the tab already shown takes a
+navigation controller back to its first screen.
+
+### Styling
+
+Every control here takes a `Style` with its colours, fonts and measurements,
+which can be replaced at any time:
+
+```swift
+var style = NotchedTabBar.Style()
+style.backgroundColors = [.black, .darkGray]
+style.selectedColor = .systemGreen
+tabs.style = style
+```
+
+Colours may be dynamic (`UIColor { traits in … }`), and then follow the trait
+collection. Drawing resolves them against the view's traits, so an app theme
+carried by a custom trait recolours the controls when the trait changes.
+
 ## Contributing
 
 UIKit-facing code is wrapped in `#if canImport(UIKit)` so the package still
