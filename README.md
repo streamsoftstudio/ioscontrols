@@ -111,6 +111,20 @@ button.progress = 0.4
 
 It is `open`, so an app can subclass it to bind its own state.
 
+### Level bars
+
+`LevelBarsView` shows a few upright bars that rise and fall with how loud
+something is, as a list marks the track that is playing. Feed it levels
+from 0 to 1, many times a second, from an audio meter. A bar jumps up to a
+louder level at once and falls back over a few updates, and holds still
+between them, so a paused track's bars stay where they stopped. With
+Reduce Motion on, the bars stand still in a fixed pattern.
+
+```swift
+let bars = LevelBarsView()
+bars.setLevels([0.4, 0.9, 0.6])
+```
+
 ### Styling
 
 Every control here takes a `Style` with its colours, fonts and measurements,
