@@ -71,6 +71,27 @@ let cell = collectionView.dequeue(AlbumCell.self, for: indexPath)
 
 Both `UITableView` and `UICollectionView` are supported.
 
+### Side menu
+
+`DrawerController` keeps a menu beside its content: the menu slides in from
+the leading edge over the content, which dims behind it.
+
+```swift
+let drawer = DrawerController(menu: menuController, content: libraryNavigation)
+window.rootViewController = drawer
+
+drawer.open()                         // from a menu button the content shows
+drawer.setContent(sourcesNavigation)  // when the menu picks another section
+drawer.close()
+```
+
+A swipe in from the leading edge also opens it, but only while the content's
+navigation stack is on its first screen, so that elsewhere the swipe still
+goes back. A tap on the dimmed content or a swipe back closes it. While it is
+open, VoiceOver keeps to the menu and the escape gesture closes it.
+`openStateChanged` reports each change, and `menuWidth` sets the width, which
+leaves a strip of content in view on narrower screens.
+
 ## Contributing
 
 UIKit-facing code is wrapped in `#if canImport(UIKit)` so the package still
