@@ -127,7 +127,7 @@ bars.setLevels([0.4, 0.9, 0.6])
 
 ### Styling
 
-Every control here takes a `Style` with its colours, fonts and measurements,
+Each control above takes a `Style` with its colours, fonts and measurements,
 which can be replaced at any time:
 
 ```swift
@@ -140,6 +140,27 @@ tabs.style = style
 Colours may be dynamic (`UIColor { traits in … }`), and then follow the trait
 collection. Drawing resolves them against the view's traits, so an app theme
 carried by a custom trait recolours the controls when the trait changes.
+
+### Side menu
+
+`DrawerController` keeps a menu beside its content: the menu slides in from
+the leading edge over the content, which dims behind it.
+
+```swift
+let drawer = DrawerController(menu: menuController, content: libraryNavigation)
+window.rootViewController = drawer
+
+drawer.open()                         // from a menu button the content shows
+drawer.setContent(sourcesNavigation)  // when the menu picks another section
+drawer.close()
+```
+
+A swipe in from the leading edge also opens it, but only while the content's
+navigation stack is on its first screen, so that elsewhere the swipe still
+goes back. A tap on the dimmed content or a swipe back closes it. While it is
+open, VoiceOver keeps to the menu and the escape gesture closes it.
+`openStateChanged` reports each change, and `menuWidth` sets the width, which
+leaves a strip of content in view on narrower screens.
 
 ## Contributing
 
