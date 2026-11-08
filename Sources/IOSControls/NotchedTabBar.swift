@@ -45,6 +45,11 @@ public final class NotchedTabBar: UIView {
         /// A soft light in the bar's lower trailing corner, or nil for none.
         public var glowColor: UIColor?
 
+        /// Fills the gap the notch leaves around the control, below the top
+        /// edge, so that content scrolled under the bar does not show through
+        /// it: usually the colour of the screen behind. Nil leaves it clear.
+        public var notchFillColor: UIColor?
+
         /// The selected item's image and title.
         public var selectedColor: UIColor
 
@@ -74,6 +79,7 @@ public final class NotchedTabBar: UIView {
         public init(
             backgroundColors: [UIColor] = [.secondarySystemBackground],
             glowColor: UIColor? = nil,
+            notchFillColor: UIColor? = nil,
             selectedColor: UIColor = .systemBlue,
             imageColor: UIColor = .label,
             titleColor: UIColor = .secondaryLabel,
@@ -87,6 +93,7 @@ public final class NotchedTabBar: UIView {
         ) {
             self.backgroundColors = backgroundColors
             self.glowColor = glowColor
+            self.notchFillColor = notchFillColor
             self.selectedColor = selectedColor
             self.imageColor = imageColor
             self.titleColor = titleColor
@@ -224,6 +231,12 @@ public final class NotchedTabBar: UIView {
 
     public override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext(), let outline, let shape else { return }
+
+        if let fill = style.notchFillColor, let cutout = shape.notchCutout() {
+            context.addPath(cutout)
+            context.setFillColor(fill.resolvedColor(with: traitCollection).cgColor)
+            context.fillPath()
+        }
 
         context.saveGState()
         context.addPath(outline)

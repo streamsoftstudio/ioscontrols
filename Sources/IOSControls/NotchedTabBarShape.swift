@@ -98,6 +98,30 @@ public struct NotchedTabBarShape: Equatable {
         return path
     }
 
+    /// What the notch cuts out of the bar: the space between the top edge and
+    /// the notch's curve, its rounding included, where whatever lies behind
+    /// the bar shows around the control. Nil when the control cuts no notch.
+    public func notchCutout() -> CGPath? {
+        guard let notch else { return nil }
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: notch.leadingFillet.x, y: top))
+        path.addArc(
+            center: notch.leadingFillet, radius: filletRadius,
+            startAngle: 1.5 * .pi, endAngle: notch.leadingTouch, clockwise: false
+        )
+        path.addArc(
+            center: controlCenter, radius: notchRadius,
+            startAngle: notch.leadingTouch + .pi, endAngle: notch.trailingTouch + .pi, clockwise: true
+        )
+        path.addArc(
+            center: notch.trailingFillet, radius: filletRadius,
+            startAngle: notch.trailingTouch, endAngle: 1.5 * .pi, clockwise: false
+        )
+        // Back along the top edge.
+        path.closeSubpath()
+        return path
+    }
+
     // MARK: Notch
 
     /// Where the notch meets the top edge: each fillet's centre, and the

@@ -31,8 +31,16 @@ open class ProgressRingButton: UIControl {
 
         public var placeholderColor: UIColor
 
+        /// A disc behind the placeholder, where the image goes, so that the
+        /// button keeps its look without an image. Nil for none.
+        public var placeholderFillColor: UIColor?
+
         /// The shadow beneath the button, or nil for none.
         public var shadowColor: UIColor?
+
+        /// How far the shadow spreads, as `CALayer.shadowRadius`: about half
+        /// of a design tool's blur.
+        public var shadowRadius: CGFloat
 
         public var ringWidth: CGFloat
 
@@ -48,7 +56,9 @@ open class ProgressRingButton: UIControl {
             ringColor: UIColor = .systemBlue,
             ringTrackColor: UIColor = .systemFill,
             placeholderColor: UIColor = .label,
+            placeholderFillColor: UIColor? = nil,
             shadowColor: UIColor? = UIColor.black.withAlphaComponent(0.5),
+            shadowRadius: CGFloat = 14,
             ringWidth: CGFloat = 3,
             ringInset: CGFloat = 4,
             imageInset: CGFloat = 11
@@ -58,7 +68,9 @@ open class ProgressRingButton: UIControl {
             self.ringColor = ringColor
             self.ringTrackColor = ringTrackColor
             self.placeholderColor = placeholderColor
+            self.placeholderFillColor = placeholderFillColor
             self.shadowColor = shadowColor
+            self.shadowRadius = shadowRadius
             self.ringWidth = ringWidth
             self.ringInset = ringInset
             self.imageInset = imageInset
@@ -166,6 +178,11 @@ open class ProgressRingButton: UIControl {
         disc.lineWidth = 1
         disc.stroke()
 
+        if image == nil, let placeholderFill = style.placeholderFillColor {
+            placeholderFill.resolvedColor(with: traitCollection).setFill()
+            UIBezierPath(ovalIn: bounds.insetBy(dx: style.imageInset, dy: style.imageInset)).fill()
+        }
+
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         let radius = bounds.width / 2 - style.ringInset - style.ringWidth / 2
         guard radius > 0 else { return }
@@ -192,7 +209,7 @@ open class ProgressRingButton: UIControl {
 
     private func applyStyle() {
         layer.shadowOpacity = style.shadowColor == nil ? 0 : 1
-        layer.shadowRadius = 14
+        layer.shadowRadius = style.shadowRadius
         layer.shadowOffset = CGSize(width: 0, height: 8)
         placeholderView.tintColor = style.placeholderColor
     }
@@ -204,6 +221,8 @@ open class ProgressRingButton: UIControl {
         let alpha: CGFloat = isDimmed ? 0.5 : 1
         imageView.alpha = alpha
         placeholderView.alpha = alpha
+        // The placeholder's disc is drawn only while there is no image.
+        setNeedsDisplay()
     }
 }
 #endif

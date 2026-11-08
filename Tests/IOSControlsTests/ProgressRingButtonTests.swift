@@ -57,6 +57,27 @@ final class ProgressRingButtonTests: XCTestCase {
         XCTAssertEqual(imageView.frame.width, 60)
     }
 
+    func testTheShadowSpreadsAsTheStyleSays() {
+        XCTAssertEqual(button.layer.shadowRadius, 14, "today's look by default")
+
+        var style = button.style
+        style.shadowRadius = 7
+        button.style = style
+
+        XCTAssertEqual(button.layer.shadowRadius, 7)
+    }
+
+    func testThePlaceholderHasNoDiscUnlessTheStyleGivesOne() {
+        XCTAssertNil(ProgressRingButton.Style().placeholderFillColor)
+
+        var style = button.style
+        style.placeholderFillColor = .darkGray
+        button.style = style
+
+        XCTAssertEqual(button.style.placeholderFillColor, .darkGray)
+        XCTAssertFalse(placeholderView.isHidden)
+    }
+
     // MARK: - Helpers
 
     private var imageView: UIImageView {
