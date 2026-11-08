@@ -22,7 +22,7 @@ Add the package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/streamsoftstudio/ioscontrols.git", from: "0.1.0")
+    .package(url: "https://github.com/streamsoftstudio/ioscontrols.git", from: "1.2.0")
 ]
 ```
 
@@ -93,7 +93,9 @@ let tabs = NotchedTabBarController(
 
 Each tab's view controller is kept while another is shown, and leaves room
 for the bar through its safe area. Choosing the tab already shown takes a
-navigation controller back to its first screen.
+navigation controller back to its first screen. Content scrolled under the
+bar shows through the gap around the control unless `style.notchFillColor`
+fills it, usually with the colour of the screen behind.
 
 ### Progress ring button
 
@@ -109,7 +111,27 @@ button.image = cover
 button.progress = 0.4
 ```
 
-It is `open`, so an app can subclass it to bind its own state.
+It is `open`, so an app can subclass it to bind its own state. Without an
+image, `style.placeholderFillColor` draws a disc where the image goes, so the
+button keeps its look; `style.shadowRadius` sets how far the shadow spreads.
+
+### Scrub bar
+
+`ScrubBar` shows how far something has played and lets the user drag it to a
+new place. The whole control takes touches, so a finger can land anywhere
+along the bar. While it is down, the bar thickens and `scrubValue` follows
+it; `value` changes only when the finger lifts, so the owner seeks once.
+VoiceOver adjusts it by `accessibilityStep`.
+
+```swift
+let bar = ScrubBar()
+bar.value = position / duration
+bar.accessibilityValueFormatter = { "\(time($0 * duration)) of \(time(duration))" }
+bar.addTarget(self, action: #selector(seek(_:)), for: .valueChanged)
+```
+
+`.editingDidBegin`, `.editingChanged` and `.editingDidEnd` follow a drag, as
+for showing the time under the finger.
 
 ### Level bars
 

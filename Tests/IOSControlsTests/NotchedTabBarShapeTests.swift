@@ -65,5 +65,33 @@ final class NotchedTabBarShapeTests: XCTestCase {
 
         XCTAssertEqual(floating.notchHalfWidth, 0)
         XCTAssertTrue(path.contains(CGPoint(x: 195, y: 14)))
+        XCTAssertNil(floating.notchCutout())
+    }
+
+    // MARK: Cutout
+
+    func testTheCutoutIsTheGapBelowTheTopEdge() throws {
+        let cutout = try XCTUnwrap(shape.notchCutout())
+
+        XCTAssertTrue(cutout.contains(CGPoint(x: 195, y: 36 + 36 + 3)), "the gap under the control")
+        XCTAssertTrue(cutout.contains(CGPoint(x: 195 - 38, y: 30)), "the gap beside the control")
+        XCTAssertTrue(cutout.contains(shape.controlCenter), "behind the control")
+        XCTAssertFalse(cutout.contains(CGPoint(x: 195, y: 11)), "above the top edge")
+        XCTAssertFalse(cutout.contains(CGPoint(x: 60, y: 30)), "the bar beside the notch")
+        XCTAssertFalse(cutout.contains(CGPoint(x: 195, y: 36 + 41 + 2)), "the bar beneath the notch")
+    }
+
+    func testTheCutoutAndTheBarMeetWithoutOverlapping() throws {
+        let cutout = try XCTUnwrap(shape.notchCutout())
+        let bar = shape.path(in: rect)
+
+        // Every point below the top edge across the notch is either bar or
+        // cutout, never both, away from the shared edge.
+        for x in stride(from: 195 - shape.notchHalfWidth + 1, to: 195 + shape.notchHalfWidth - 1, by: 3) {
+            for y in stride(from: shape.top + 1, to: 100, by: 3) {
+                let point = CGPoint(x: x, y: y)
+                XCTAssertFalse(bar.contains(point) && cutout.contains(point), "both at \(point)")
+            }
+        }
     }
 }
