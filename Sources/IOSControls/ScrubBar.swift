@@ -12,7 +12,9 @@ import UIKit
 /// choose a new place in it: a player's position.
 ///
 /// The whole control takes touches, so a finger can land anywhere along the
-/// bar. While it is down, the bar thickens, `scrubValue` follows the finger
+/// bar, and keeps them however far the finger strays from the line, so the
+/// gestures of the views around it never cut a drag short. While the finger
+/// is down, the bar thickens, `scrubValue` follows the finger
 /// and `isScrubbing` is true; `value` changes only when the finger lifts, so
 /// whoever owns the bar seeks once rather than at every move. VoiceOver
 /// adjusts the value by `accessibilityStep`.
@@ -181,6 +183,15 @@ open class ScrubBar: UIControl {
         scrubValue = value
         layoutBar(animated: true)
         sendActions(for: .editingDidEnd)
+    }
+
+    /// A touch on the bar scrubs, wherever the finger drifts. The gestures of
+    /// the views around it, such as a sheet's swipe to dismiss or a scroll
+    /// view's pan, would otherwise take it over as the finger strays off the
+    /// line, cancelling the scrub; they begin only from touches elsewhere.
+    open override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer.view?.isDescendant(of: self) == true else { return false }
+        return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
 
     // MARK: Accessibility

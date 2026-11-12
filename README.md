@@ -121,7 +121,10 @@ button keeps its look; `style.shadowRadius` sets how far the shadow spreads.
 new place. The whole control takes touches, so a finger can land anywhere
 along the bar. While it is down, the bar thickens and `scrubValue` follows
 it; `value` changes only when the finger lifts, so the owner seeks once.
-VoiceOver adjusts it by `accessibilityStep`.
+A drag that starts on the bar stays a scrub wherever the finger strays: the
+gestures of the views around it, such as a sheet's swipe to dismiss or a
+scroll view's pan, begin only from touches elsewhere. VoiceOver adjusts it
+by `accessibilityStep`.
 
 ```swift
 let bar = ScrubBar()

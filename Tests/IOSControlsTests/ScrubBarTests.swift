@@ -61,6 +61,19 @@ final class ScrubBarTests: XCTestCase {
         XCTAssertEqual(bar.displayedValue, 0.3)
     }
 
+    func testTheGesturesAroundTheBarCannotTakeOverItsDrag() {
+        // As a sheet's swipe to dismiss, on the view the bar sits in.
+        let sheet = UIView(frame: CGRect(x: 0, y: 0, width: 300, height: 600))
+        sheet.addSubview(bar)
+        let dismiss = UIPanGestureRecognizer()
+        sheet.addGestureRecognizer(dismiss)
+        let own = UIPanGestureRecognizer()
+        bar.addGestureRecognizer(own)
+
+        XCTAssertFalse(bar.gestureRecognizerShouldBegin(dismiss), "a drag that strays off the line goes on scrubbing")
+        XCTAssertTrue(bar.gestureRecognizerShouldBegin(own), "the bar's own gestures still begin")
+    }
+
     func testTheValueCanChangeUnderTheFingerWithoutMovingTheBar() {
         bar.beginScrubbing(at: 60)
 
