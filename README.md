@@ -150,6 +150,35 @@ let bars = LevelBarsView()
 bars.setLevels([0.4, 0.9, 0.6])
 ```
 
+### Message banner
+
+`MessageBannerCenter` shows short messages in a banner at the top of the
+screen, one at a time: a song that could not be played, a copy that has
+finished. The banner shows in a window of its own above the app's, so it
+covers sheets and alerts too, and that window takes no touches but the
+banner's, so the screen beneath stays in use.
+
+```swift
+let messages = MessageBannerCenter(window: window)
+messages.prepareWindow = { bannerWindow in
+    bannerWindow.overrideUserInterfaceStyle = window.overrideUserInterfaceStyle
+}
+
+messages.show(MessageBanner.Message(
+    title: "Skipped “Borealis”",
+    body: "Its drive or share isn't connected.",
+    image: UIImage(systemName: "externaldrive.badge.xmark")
+))
+```
+
+A banner slides down, stays long enough to read (`MessageBannerTiming`) or
+for the message's own `duration`, and slides back up; a tap or a swipe up
+sends it away sooner. A new message takes the place of the one showing.
+VoiceOver reads each message as it shows, after whatever it is saying, keeps
+the banner up twice as long, and dismisses it with the escape gesture. With
+Reduce Motion on, banners fade instead of sliding. `prepareWindow` dresses
+the banners' window as the app's own, as with a theme's traits.
+
 ### Styling
 
 Each control above takes a `Style` with its colours, fonts and measurements,
