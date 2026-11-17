@@ -122,5 +122,106 @@ final class DrawerControllerTests: XCTestCase {
 
         XCTAssertFalse(drawer.gestureRecognizerShouldBegin(drawer.edgePan))
     }
+
+    // MARK: Docking
+
+    func testWithoutADockingWidthTheMenuNeverDocks() {
+        resize(to: CGSize(width: 1366, height: 1024))
+
+        XCTAssertFalse(drawer.isDocked)
+        XCTAssertTrue(drawer.menuContainer.isHidden)
+        XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1366, height: 1024))
+    }
+
+    func testWhereThereIsRoomTheMenuDocksBesideTheContent() {
+        drawer.dockingMinimumWidth = 1100
+
+        resize(to: CGSize(width: 1366, height: 1024))
+
+        XCTAssertTrue(drawer.isDocked)
+        XCTAssertFalse(drawer.isOpen)
+        XCTAssertFalse(drawer.menuContainer.isHidden)
+        XCTAssertEqual(drawer.menuContainer.frame, CGRect(x: 0, y: 0, width: 300, height: 1024))
+        XCTAssertEqual(frame(of: content), CGRect(x: 300, y: 0, width: 1066, height: 1024))
+        XCTAssertTrue(drawer.dimming.isHidden)
+        XCTAssertFalse(drawer.separator.isHidden)
+    }
+
+    func testBelowTheDockingWidthTheMenuStillSlidesOver() {
+        drawer.dockingMinimumWidth = 1100
+
+        resize(to: CGSize(width: 1024, height: 1366))
+
+        XCTAssertFalse(drawer.isDocked)
+        XCTAssertTrue(drawer.menuContainer.isHidden)
+        XCTAssertTrue(drawer.separator.isHidden)
+        XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1024, height: 1366))
+
+        drawer.open(animated: false)
+
+        XCTAssertTrue(drawer.isOpen)
+    }
+
+    func testCrossingTheDockingWidthReportsItAndLeavesTheMenuClosed() {
+        drawer.dockingMinimumWidth = 1100
+        var docked: [Bool] = []
+        var opened: [Bool] = []
+        drawer.dockStateChanged = { docked.append($0) }
+        drawer.openStateChanged = { opened.append($0) }
+        resize(to: CGSize(width: 1024, height: 1366))
+        drawer.open(animated: false)
+
+        resize(to: CGSize(width: 1366, height: 1024))
+
+        XCTAssertTrue(drawer.isDocked)
+        XCTAssertFalse(drawer.isOpen, "an open menu closes as it docks")
+
+        resize(to: CGSize(width: 1024, height: 1366))
+
+        XCTAssertFalse(drawer.isDocked)
+        XCTAssertFalse(drawer.isOpen)
+        XCTAssertTrue(drawer.menuContainer.isHidden)
+        XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1024, height: 1366))
+        XCTAssertEqual(docked, [true, false])
+        XCTAssertEqual(opened, [true, false])
+    }
+
+    func testADockedMenuHasNothingToOpenOrClose() {
+        drawer.dockingMinimumWidth = 1100
+        resize(to: CGSize(width: 1366, height: 1024))
+
+        drawer.open(animated: false)
+        drawer.toggle(animated: false)
+
+        XCTAssertFalse(drawer.isOpen)
+        XCTAssertFalse(drawer.menuContainer.accessibilityViewIsModal, "VoiceOver reads the content too")
+        XCTAssertFalse(drawer.accessibilityPerformEscape())
+        XCTAssertFalse(drawer.gestureRecognizerShouldBegin(drawer.edgePan))
+        XCTAssertFalse(drawer.gestureRecognizerShouldBegin(drawer.closePan))
+    }
+
+    func testRightToLeftTheDockedMenuIsOnTheRight() {
+        drawer.dockingMinimumWidth = 1100
+        drawer.view.semanticContentAttribute = .forceRightToLeft
+
+        resize(to: CGSize(width: 1366, height: 1024))
+
+        XCTAssertEqual(drawer.menuContainer.frame, CGRect(x: 1066, y: 0, width: 300, height: 1024))
+        XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1066, height: 1024))
+    }
+
+    // MARK: Helpers
+
+    /// Resizes the window, as turning an iPad or resizing its window does.
+    private func resize(to size: CGSize) {
+        window.frame = CGRect(origin: .zero, size: size)
+        window.layoutIfNeeded()
+        drawer.view.layoutIfNeeded()
+    }
+
+    /// Where `controller`'s view sits in the drawer.
+    private func frame(of controller: UIViewController) -> CGRect {
+        controller.view.convert(controller.view.bounds, to: drawer.view)
+    }
 }
 #endif

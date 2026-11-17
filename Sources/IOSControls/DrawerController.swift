@@ -20,9 +20,16 @@ import UIKit
 /// the menu, and the escape gesture closes it. The content can be replaced,
 /// as when the menu picks another section.
 ///
+/// Given a `dockingMinimumWidth`, the menu docks wherever the container is
+/// at least that wide, as on an iPad in landscape: it stays in view beside
+/// the content, which takes the rest of the width, and there is nothing to
+/// open or close. Narrower, it slides over the content again, closed.
+///
 /// ```swift
 /// let drawer = DrawerController(menu: menuController, content: libraryNavigation)
+/// drawer.dockingMinimumWidth = 1100
 /// drawer.openStateChanged = { isOpen in … }
+/// drawer.dockStateChanged = { isDocked in … }
 /// ```
 open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
 
@@ -47,6 +54,20 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
     /// Told the new state whenever the menu opens or closes.
     public var openStateChanged: ((Bool) -> Void)?
 
+    /// The width from which the menu docks beside the content rather than
+    /// sliding over it. `nil`, the default, never docks.
+    public var dockingMinimumWidth: CGFloat? {
+        didSet { viewIfLoaded?.setNeedsLayout() }
+    }
+
+    /// Whether the menu is docked beside the content, where it stays in
+    /// view and neither opens nor closes.
+    public private(set) var isDocked = false
+
+    /// Told the new state whenever the menu docks or undocks, as when the
+    /// device turns or the window is resized.
+    public var dockStateChanged: ((Bool) -> Void)?
+
     let edgePan = UIScreenEdgePanGestureRecognizer()
 
     let closePan = UIPanGestureRecognizer()
@@ -54,6 +75,9 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
     let dimming = DimmingView()
 
     let menuContainer = UIView()
+
+    /// The hairline between a docked menu and the content.
+    let separator = UIView()
 
     private let contentContainer = UIView()
 
@@ -92,6 +116,10 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
         view.addSubview(menuContainer)
         embed(menu, in: menuContainer)
 
+        separator.backgroundColor = .separator
+        separator.isHidden = true
+        view.addSubview(separator)
+
         edgePan.addTarget(self, action: #selector(edgePanned(_:)))
         edgePan.delegate = self
         view.addGestureRecognizer(edgePan)
@@ -104,15 +132,35 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
 
     open override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        updateDocking()
+        let bounds = view.bounds
         let width = currentMenuWidth
         menuContainer.transform = .identity
         menuContainer.frame = CGRect(
-            x: isRightToLeft ? view.bounds.width - width : 0,
+            x: isRightToLeft ? bounds.width - width : 0,
             y: 0,
             width: width,
-            height: view.bounds.height
+            height: bounds.height
         )
-        dimming.frame = view.bounds
+        if isDocked {
+            contentContainer.frame = CGRect(
+                x: isRightToLeft ? 0 : width,
+                y: 0,
+                width: bounds.width - width,
+                height: bounds.height
+            )
+            // Over the menu's edge, so the content keeps its full width.
+            let hairline = 1 / max(traitCollection.displayScale, 1)
+            separator.frame = CGRect(
+                x: isRightToLeft ? bounds.width - width : width - hairline,
+                y: 0,
+                width: hairline,
+                height: bounds.height
+            )
+        } else {
+            contentContainer.frame = bounds
+        }
+        dimming.frame = bounds
         edgePan.edges = isRightToLeft ? .right : .left
         applyProgress()
     }
@@ -127,15 +175,20 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
 
     // MARK: Opening and closing
 
+    /// Slides the menu out over the content. A docked menu is already there.
     public func open(animated: Bool = true) {
+        guard !isDocked else { return }
         setOpen(true, animated: animated)
     }
 
+    /// Slides the menu away. A docked menu stays.
     public func close(animated: Bool = true) {
+        guard !isDocked else { return }
         setOpen(false, animated: animated)
     }
 
     public func toggle(animated: Bool = true) {
+        guard !isDocked else { return }
         setOpen(!isOpen, animated: animated)
     }
 
@@ -183,7 +236,28 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
         UIAccessibility.post(notification: .screenChanged, argument: open ? menuContainer : contentContainer)
     }
 
+    /// Docks or undocks the menu for the container's width. Either way the
+    /// menu ends up closed: docked, it is simply there, and undocked, it
+    /// waits to be opened.
+    private func updateDocking() {
+        let docks = dockingMinimumWidth.map { view.bounds.width >= $0 } ?? false
+        guard docks != isDocked else { return }
+        if isOpen {
+            setOpen(false, animated: false)
+        }
+        isDocked = docks
+        dockStateChanged?(docks)
+    }
+
     private func applyProgress() {
+        separator.isHidden = !isDocked
+        guard !isDocked else {
+            menuContainer.transform = .identity
+            menuContainer.isHidden = false
+            dimming.alpha = 0
+            dimming.isHidden = true
+            return
+        }
         let offset = (1 - progress) * currentMenuWidth * (isRightToLeft ? 1 : -1)
         menuContainer.transform = CGAffineTransform(translationX: offset, y: 0)
         menuContainer.isHidden = progress == 0
@@ -221,8 +295,10 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
 
     open func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer === edgePan {
-            // On a pushed screen the same swipe goes back.
-            return opensWithEdgeSwipe && !isOpen && (contentNavigationController?.viewControllers.count ?? 1) <= 1
+            // On a pushed screen the same swipe goes back, and a docked menu
+            // is already out.
+            return opensWithEdgeSwipe && !isOpen && !isDocked
+                && (contentNavigationController?.viewControllers.count ?? 1) <= 1
         }
         if gestureRecognizer === closePan {
             // Sideways only, so the menu's list still scrolls.
