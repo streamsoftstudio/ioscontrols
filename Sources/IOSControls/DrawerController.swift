@@ -21,9 +21,11 @@ import UIKit
 /// as when the menu picks another section.
 ///
 /// Given a `dockingMinimumWidth`, the menu docks wherever the container is
-/// at least that wide, as on an iPad in landscape: it stays in view beside
-/// the content, which takes the rest of the width, and there is nothing to
-/// open or close. Narrower, it slides over the content again, closed.
+/// at least that wide, as on an iPad in landscape: it stays in view, and
+/// there is nothing to open or close. The content runs on under it, with a
+/// safe area as wide as the menu, so that what the content lays out within
+/// its safe area and margins sits beside the menu. Narrower, the menu
+/// slides over the content again, closed.
 ///
 /// ```swift
 /// let drawer = DrawerController(menu: menuController, content: libraryNavigation)
@@ -80,6 +82,10 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
     let separator = UIView()
 
     private let contentContainer = UIView()
+
+    /// The safe area the drawer adds to the content's own beside a docked
+    /// menu.
+    private var contentInset = UIEdgeInsets.zero
 
     /// How far the menu is out: 0 closed, 1 open.
     private var progress: CGFloat = 0 {
@@ -142,14 +148,9 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
             width: width,
             height: bounds.height
         )
+        contentContainer.frame = bounds
         if isDocked {
-            contentContainer.frame = CGRect(
-                x: isRightToLeft ? 0 : width,
-                y: 0,
-                width: bounds.width - width,
-                height: bounds.height
-            )
-            // Over the menu's edge, so the content keeps its full width.
+            // Over the menu's edge, beside the content's safe area.
             let hairline = 1 / max(traitCollection.displayScale, 1)
             separator.frame = CGRect(
                 x: isRightToLeft ? bounds.width - width : width - hairline,
@@ -157,9 +158,8 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
                 width: hairline,
                 height: bounds.height
             )
-        } else {
-            contentContainer.frame = bounds
         }
+        insetContent(content)
         dimming.frame = bounds
         edgePan.edges = isRightToLeft ? .right : .left
         applyProgress()
@@ -202,7 +202,13 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
         previous.willMove(toParent: nil)
         previous.view.removeFromSuperview()
         previous.removeFromParent()
+        var additional = previous.additionalSafeAreaInsets
+        additional.left -= contentInset.left
+        additional.right -= contentInset.right
+        previous.additionalSafeAreaInsets = additional
+        contentInset = .zero
         embed(viewController, in: contentContainer)
+        insetContent(viewController)
         setNeedsStatusBarAppearanceUpdate()
     }
 
@@ -247,6 +253,28 @@ open class DrawerController: UIViewController, UIGestureRecognizerDelegate {
         }
         isDocked = docks
         dockStateChanged?(docks)
+    }
+
+    /// While docked, the content runs on under the menu, and a safe area as
+    /// wide as the menu keeps what it shows beside it. Laid out from the
+    /// window's edge, the content keeps the system's minimum margins, which
+    /// UIKit gives a view only on the sides at the window's edges. Whatever
+    /// safe area the content adds itself is kept.
+    private func insetContent(_ controller: UIViewController) {
+        var inset = UIEdgeInsets.zero
+        if isDocked {
+            if isRightToLeft {
+                inset.right = currentMenuWidth
+            } else {
+                inset.left = currentMenuWidth
+            }
+        }
+        guard inset != contentInset else { return }
+        var additional = controller.additionalSafeAreaInsets
+        additional.left += inset.left - contentInset.left
+        additional.right += inset.right - contentInset.right
+        controller.additionalSafeAreaInsets = additional
+        contentInset = inset
     }
 
     private func applyProgress() {

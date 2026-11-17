@@ -142,9 +142,47 @@ final class DrawerControllerTests: XCTestCase {
         XCTAssertFalse(drawer.isOpen)
         XCTAssertFalse(drawer.menuContainer.isHidden)
         XCTAssertEqual(drawer.menuContainer.frame, CGRect(x: 0, y: 0, width: 300, height: 1024))
-        XCTAssertEqual(frame(of: content), CGRect(x: 300, y: 0, width: 1066, height: 1024))
         XCTAssertTrue(drawer.dimming.isHidden)
         XCTAssertFalse(drawer.separator.isHidden)
+    }
+
+    /// UIKit gives a view the system's minimum margins only on the sides at
+    /// the window's edges, so the content runs on under the menu, and keeps
+    /// beside it within its safe area.
+    func testDockedContentSitsBesideTheMenuWithTheSystemsMargins() {
+        drawer.dockingMinimumWidth = 1100
+
+        resize(to: CGSize(width: 1366, height: 1024))
+        content.view.layoutIfNeeded()
+
+        XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1366, height: 1024))
+        XCTAssertEqual(content.view.safeAreaInsets.left, 300)
+        XCTAssertGreaterThan(content.systemMinimumLayoutMargins.leading, 0)
+        XCTAssertEqual(content.view.layoutMargins.left, 300 + content.systemMinimumLayoutMargins.leading)
+    }
+
+    func testDockedContentKeepsTheSafeAreaItAddsItself() {
+        drawer.dockingMinimumWidth = 1100
+        content.additionalSafeAreaInsets = UIEdgeInsets(top: 0, left: 7, bottom: 5, right: 0)
+
+        resize(to: CGSize(width: 1366, height: 1024))
+
+        XCTAssertEqual(content.additionalSafeAreaInsets, UIEdgeInsets(top: 0, left: 307, bottom: 5, right: 0))
+
+        resize(to: CGSize(width: 1024, height: 1366))
+
+        XCTAssertEqual(content.additionalSafeAreaInsets, UIEdgeInsets(top: 0, left: 7, bottom: 5, right: 0))
+    }
+
+    func testContentPutInPlaceWhileDockedSitsBesideTheMenuToo() {
+        drawer.dockingMinimumWidth = 1100
+        resize(to: CGSize(width: 1366, height: 1024))
+        let next = UIViewController()
+
+        drawer.setContent(next)
+
+        XCTAssertEqual(next.additionalSafeAreaInsets.left, 300)
+        XCTAssertEqual(content.additionalSafeAreaInsets.left, 0, "the content it replaced is as it was")
     }
 
     func testBelowTheDockingWidthTheMenuStillSlidesOver() {
@@ -156,6 +194,7 @@ final class DrawerControllerTests: XCTestCase {
         XCTAssertTrue(drawer.menuContainer.isHidden)
         XCTAssertTrue(drawer.separator.isHidden)
         XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1024, height: 1366))
+        XCTAssertEqual(content.additionalSafeAreaInsets, .zero)
 
         drawer.open(animated: false)
 
@@ -182,6 +221,7 @@ final class DrawerControllerTests: XCTestCase {
         XCTAssertFalse(drawer.isOpen)
         XCTAssertTrue(drawer.menuContainer.isHidden)
         XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1024, height: 1366))
+        XCTAssertEqual(content.additionalSafeAreaInsets, .zero, "the docked menu's inset goes")
         XCTAssertEqual(docked, [true, false])
         XCTAssertEqual(opened, [true, false])
     }
@@ -207,7 +247,7 @@ final class DrawerControllerTests: XCTestCase {
         resize(to: CGSize(width: 1366, height: 1024))
 
         XCTAssertEqual(drawer.menuContainer.frame, CGRect(x: 1066, y: 0, width: 300, height: 1024))
-        XCTAssertEqual(frame(of: content), CGRect(x: 0, y: 0, width: 1066, height: 1024))
+        XCTAssertEqual(content.additionalSafeAreaInsets, UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 300))
     }
 
     // MARK: Helpers

@@ -217,12 +217,13 @@ open, VoiceOver keeps to the menu and the escape gesture closes it.
 leaves a strip of content in view on narrower screens.
 
 Given a `dockingMinimumWidth`, the menu docks wherever the drawer is at least
-that wide, as on an iPad in landscape: it stays in view beside the content,
-which takes the rest of the width, with no dimming or swipes, and `open()` and
-`close()` do nothing. Narrower, it slides over again, closed. Turning the
-device or resizing the window switches between the two, and
-`dockStateChanged` reports each change, for hiding the content's menu button
-while the menu is docked.
+that wide, as on an iPad in landscape: it stays in view, with no dimming or
+swipes, and `open()` and `close()` do nothing. The content runs on under it,
+with a safe area as wide as the menu, so what the content lays out within its
+safe area and margins sits beside the menu, with the system's margins.
+Narrower, the menu slides over again, closed. Turning the device or resizing
+the window switches between the two, and `dockStateChanged` reports each
+change, for hiding the content's menu button while the menu is docked.
 
 ```swift
 drawer.dockingMinimumWidth = 1100   // every iPad in landscape, none in portrait
